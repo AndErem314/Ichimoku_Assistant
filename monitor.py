@@ -13,7 +13,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Optional
 
-from live_monitor import MarketDataFetcher, SignalDetector, StateManager, MonitorScheduler
+from live_monitor import MarketDataFetcher, SignalDetector, StateManager
+from live_monitor.scheduler import MonitorScheduler
 from notifications import DiscordNotifier, TelegramNotifier, MessageFormatter
 
 
@@ -28,9 +29,8 @@ class CryptoMonitor:
         """Initialize monitor with configuration."""
         self.config = self._load_config(config_path)
         self._setup_logging()
-        self._initialize_components()
-        
         self.logger = logging.getLogger(__name__)
+        self._initialize_components()
         self.logger.info("=" * 70)
         self.logger.info("Crypto Trading Monitor Initialized")
         self.logger.info("=" * 70)

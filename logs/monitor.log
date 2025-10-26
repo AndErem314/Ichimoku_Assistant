@@ -1,0 +1,63 @@
+2025-10-26 19:40:08,477 - live_monitor.market_data_fetcher - INFO - Initialized MarketDataFetcher with binance
+2025-10-26 19:40:08,482 - live_monitor.signal_detector - INFO - Loaded strategy configuration from /Users/andrey/Python/Ichimoku_Assistant/config/strategies.yaml
+2025-10-26 19:40:08,482 - live_monitor.signal_detector - INFO - Initialized SignalDetector with strategy: Full Confirmation TK Exit default
+2025-10-26 19:40:08,482 - live_monitor.state_manager - INFO - No existing state file found, starting fresh
+2025-10-26 19:40:08,482 - live_monitor.state_manager - INFO - Initialized StateManager with state file: data/state/signal_states.json
+2025-10-26 19:40:08,483 - notifications.message_formatter - INFO - Initialized MessageFormatter with gemini LLM
+2025-10-26 19:40:08,483 - notifications.discord_notifier - INFO - Initialized DiscordNotifier
+2025-10-26 19:41:03,474 - live_monitor.market_data_fetcher - INFO - Initialized MarketDataFetcher with binance
+2025-10-26 19:41:03,480 - live_monitor.signal_detector - INFO - Loaded strategy configuration from /Users/andrey/Python/Ichimoku_Assistant/config/strategies.yaml
+2025-10-26 19:41:03,480 - live_monitor.signal_detector - INFO - Initialized SignalDetector with strategy: Full Confirmation TK Exit default
+2025-10-26 19:41:03,480 - live_monitor.state_manager - INFO - No existing state file found, starting fresh
+2025-10-26 19:41:03,480 - live_monitor.state_manager - INFO - Initialized StateManager with state file: data/state/signal_states.json
+2025-10-26 19:41:03,480 - notifications.message_formatter - INFO - Initialized MessageFormatter with gemini LLM
+2025-10-26 19:41:03,480 - notifications.discord_notifier - INFO - Initialized DiscordNotifier
+2025-10-26 19:41:03,480 - __main__ - INFO - Discord notifier enabled
+2025-10-26 19:41:03,480 - notifications.telegram_notifier - INFO - Initialized TelegramNotifier for chat 1771741539
+2025-10-26 19:41:03,480 - __main__ - INFO - Telegram notifier enabled
+2025-10-26 19:41:03,480 - __main__ - INFO - ======================================================================
+2025-10-26 19:41:03,480 - __main__ - INFO - Crypto Trading Monitor Initialized
+2025-10-26 19:41:03,480 - __main__ - INFO - ======================================================================
+2025-10-26 19:41:03,480 - __main__ - INFO - Configuration:
+2025-10-26 19:41:03,480 - __main__ - INFO -   Symbols: BTC/USDT, ETH/USDT, SOL/USDT
+2025-10-26 19:41:03,480 - __main__ - INFO -   Timeframe: 4h
+2025-10-26 19:41:03,481 - __main__ - INFO -   Data points: 300
+2025-10-26 19:41:03,481 - __main__ - INFO -   Discord: Enabled
+2025-10-26 19:41:03,481 - __main__ - INFO -   Telegram: Enabled
+2025-10-26 19:41:03,481 - __main__ - INFO -   LLM: gemini (Enabled)
+2025-10-26 19:41:03,481 - __main__ - INFO - ----------------------------------------------------------------------
+2025-10-26 19:41:03,481 - __main__ - INFO - Running initial analysis...
+2025-10-26 19:41:03,481 - __main__ - INFO - Starting analysis cycle at 2025-10-26T18:41:03.481194
+2025-10-26 19:41:03,481 - __main__ - INFO - Analyzing BTC/USDT...
+2025-10-26 19:41:03,481 - live_monitor.market_data_fetcher - INFO - Fetching 300 candles of 4h data for BTC/USDT
+2025-10-26 19:41:10,412 - live_monitor.market_data_fetcher - INFO - Successfully fetched 300 candles for BTC/USDT
+2025-10-26 19:41:10,418 - strategy.ichimoku_strategy - INFO - Calculated Ichimoku indicators for 300 data points
+2025-10-26 19:41:10,445 - live_monitor.signal_detector - INFO - Detected NONE signal for BTC/USDT with confidence 0.00%
+2025-10-26 19:41:10,445 - __main__ - INFO - BTC/USDT: NONE (confidence: 0.0%)
+2025-10-26 19:41:10,445 - live_monitor.state_manager - INFO - New symbol BTC/USDT, no actionable signal yet
+2025-10-26 19:41:10,446 - __main__ - INFO - Analyzing ETH/USDT...
+2025-10-26 19:41:10,446 - live_monitor.market_data_fetcher - INFO - Fetching 300 candles of 4h data for ETH/USDT
+2025-10-26 19:41:10,937 - live_monitor.market_data_fetcher - INFO - Successfully fetched 300 candles for ETH/USDT
+2025-10-26 19:41:10,943 - strategy.ichimoku_strategy - INFO - Calculated Ichimoku indicators for 300 data points
+2025-10-26 19:41:10,980 - live_monitor.signal_detector - INFO - Detected NONE signal for ETH/USDT with confidence 0.00%
+2025-10-26 19:41:10,980 - __main__ - INFO - ETH/USDT: NONE (confidence: 0.0%)
+2025-10-26 19:41:10,980 - live_monitor.state_manager - INFO - New symbol ETH/USDT, no actionable signal yet
+2025-10-26 19:41:10,980 - __main__ - INFO - Analyzing SOL/USDT...
+2025-10-26 19:41:10,980 - live_monitor.market_data_fetcher - INFO - Fetching 300 candles of 4h data for SOL/USDT
+2025-10-26 19:41:11,476 - live_monitor.market_data_fetcher - INFO - Successfully fetched 300 candles for SOL/USDT
+2025-10-26 19:41:11,482 - strategy.ichimoku_strategy - INFO - Calculated Ichimoku indicators for 300 data points
+2025-10-26 19:41:11,521 - live_monitor.signal_detector - INFO - Detected NONE signal for SOL/USDT with confidence 0.00%
+2025-10-26 19:41:11,521 - __main__ - INFO - SOL/USDT: NONE (confidence: 0.0%)
+2025-10-26 19:41:11,521 - live_monitor.state_manager - INFO - New symbol SOL/USDT, no actionable signal yet
+2025-10-26 19:41:11,521 - __main__ - INFO - Analysis cycle completed
+2025-10-26 19:41:11,521 - __main__ - INFO - ----------------------------------------------------------------------
+2025-10-26 19:41:11,521 - live_monitor.scheduler - INFO - Initialized MonitorScheduler
+2025-10-26 19:41:11,521 - __main__ - INFO - Starting scheduled monitoring...
+2025-10-26 19:41:11,522 - live_monitor.scheduler - INFO - Scheduled analysis at 00:00:15 UTC
+2025-10-26 19:41:11,522 - live_monitor.scheduler - INFO - Scheduled analysis at 04:00:15 UTC
+2025-10-26 19:41:11,522 - live_monitor.scheduler - INFO - Scheduled analysis at 08:00:15 UTC
+2025-10-26 19:41:11,522 - live_monitor.scheduler - INFO - Scheduled analysis at 12:00:15 UTC
+2025-10-26 19:41:11,522 - live_monitor.scheduler - INFO - Scheduled analysis at 16:00:15 UTC
+2025-10-26 19:41:11,522 - live_monitor.scheduler - INFO - Scheduled analysis at 20:00:15 UTC
+2025-10-26 19:41:11,522 - live_monitor.scheduler - INFO - Setup complete: 6 scheduled runs per day
+2025-10-26 19:41:11,522 - live_monitor.scheduler - INFO - Scheduler started, entering main loop
