@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  crypto-monitor:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: ichimoku-crypto-monitor
+    
+    # Load environment variables from .env file
+    env_file:
+      - ../.env
+    
+    # Persist logs and state
+    volumes:
+      - ../logs:/app/logs
+      - ../data:/app/data
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Health check (optional)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 30s

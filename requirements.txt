@@ -1,0 +1,30 @@
+# Core dependencies
+pandas>=2.0.0
+numpy>=1.24.0
+python-dotenv>=1.0.0
+
+# Trading and data fetching
+ccxt>=4.0.0
+
+# Data visualization and reporting
+matplotlib>=3.7.0
+plotly>=5.17.0
+reportlab>=4.0.0
+
+# Configuration
+pyyaml>=6.0.1
+
+# LLM Integration
+openai>=1.0.0
+google-generativeai>=0.3.0
+
+# Additional utilities
+requests>=2.31.0
+python-dateutil>=2.8.2
+
+# Scheduling
+schedule>=1.2.0
+
+# Notifications (using direct APIs via requests, no heavy libraries needed)
+# Discord: webhook API
+# Telegram: bot API

@@ -1,0 +1,91 @@
+# Live Crypto Trading Monitor Configuration
+
+monitoring:
+  # Enable/disable monitoring
+  enabled: true
+  
+  # Trading pairs to monitor
+  symbols:
+    - "BTC/USDT"
+    - "ETH/USDT"
+    - "SOL/USDT"
+  
+  # Timeframe for analysis
+  timeframe: "4h"
+  
+  # Number of candles to fetch (300 x 4h = 50 days)
+  data_points: 300
+  
+  # Run immediately on startup (before scheduled runs)
+  run_on_startup: true
+
+# Schedule Configuration
+schedule:
+  # Times to run analysis (15 seconds after candle close)
+  times:
+    - "00:00:15"
+    - "04:00:15"
+    - "08:00:15"
+    - "12:00:15"
+    - "16:00:15"
+    - "20:00:15"
+  timezone: "UTC"
+
+# Notification Settings
+notifications:
+  # Discord webhook notifications
+  discord:
+    enabled: true
+    # Webhook URL from environment: DISCORD_WEBHOOK_URL
+  
+  # Telegram bot notifications
+  telegram:
+    enabled: true
+    # Bot token from environment: TELEGRAM_BOT_TOKEN
+    # Chat ID from environment: TELEGRAM_CHAT_ID
+  
+  # Send test message on startup
+  test_on_startup: false
+
+# LLM Configuration
+llm:
+  # Enable/disable LLM-enhanced analysis
+  enabled: true
+  
+  # Provider: "gemini" or "openai"
+  # Configuration loaded from .env via llm_analysis module
+  provider: "gemini"
+
+# Strategy Configuration
+strategy:
+  # Strategy name from config/strategies.yaml
+  name: "strategy_01"
+  
+  # Stop loss percentage for notifications
+  stop_loss_pct: 4.0
+
+# Logging Configuration
+logging:
+  # Console log level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+  
+  # Log file
+  file:
+    enabled: true
+    path: "logs/monitor.log"
+    max_size_mb: 10
+    backup_count: 5
+
+# State Management
+state:
+  # State file path (tracks signals to avoid duplicates)
+  file_path: "data/state/signal_states.json"
+
+# Error Handling
+error_handling:
+  # Continue monitoring if individual symbol fails
+  continue_on_error: true
+  
+  # Retry settings for failed API calls
+  max_retries: 3
+  retry_delay_seconds: 5
