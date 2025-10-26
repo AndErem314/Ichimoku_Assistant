@@ -156,7 +156,7 @@ Keep it actionable and trader-friendly. Maximum 150 words.
 - ✅ `notifications/` - Alert system (new)
 - ✅ `strategy/ichimoku_strategy.py` - Core indicator calculation
 - ✅ `llm_analysis/` - AI integration
-- ✅ `config/strategies.yaml` - Strategy configuration
+- ✅ `config/strategy.yaml` - Strategy configuration
 
 ## Adjustments Made
 
@@ -232,7 +232,7 @@ Ichimoku_Assistant/
 ├── test_phase1.py              
 │
 ├── config/
-│   └── strategies.yaml         (strategy_01 configuration)
+│   └── strategy.yaml          (ichimoku_default configuration)
 │
 ├── live_monitor/               ✅ Phase 1
 │   ├── __init__.py

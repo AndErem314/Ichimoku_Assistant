@@ -34,7 +34,7 @@ Successfully implemented all core monitoring infrastructure components for the l
 
 **Features:**
 - Calculates Ichimoku indicators using existing `strategy/ichimoku_strategy.py`
-- Loads strategy_01 configuration from `config/strategies.yaml`
+- Loads ichimoku_default configuration from `config/strategy.yaml`
 - Detects 4 signal types:
   - **LONG**: All buy conditions met (entry)
   - **EXIT LONG**: Sell conditions met (exit long)
@@ -44,7 +44,7 @@ Successfully implemented all core monitoring infrastructure components for the l
 - Extracts Ichimoku values for reporting
 
 **Signal Logic:**
-- LONG conditions (strategy_01):
+- LONG conditions (ichimoku_default):
   - PriceAboveCloud
   - TenkanAboveKijun
   - SpanAaboveSpanB
@@ -59,7 +59,7 @@ Successfully implemented all core monitoring infrastructure components for the l
   - ChikouBelowPrice
 
 - EXIT signals:
-  - EXIT LONG: TenkanBelowKijun (from strategy_01 sell_conditions)
+- EXIT LONG: TenkanBelowKijun (from ichimoku_default sell_conditions)
   - EXIT SHORT: Buy conditions met
 
 **Key Methods:**
@@ -138,7 +138,7 @@ Ichimoku_Assistant/
 │   └── state/
 │       └── signal_states.json      (created at runtime)
 ├── config/
-│   └── strategies.yaml             (existing, reused)
+│   └── strategy.yaml              (existing, reused)
 ├── strategy/
 │   └── ichimoku_strategy.py        (existing, reused)
 ├── test_phase1.py                  ✅
@@ -155,7 +155,7 @@ Ichimoku_Assistant/
 
 ### ✅ Reusability
 - Leverages existing Ichimoku calculation code
-- Uses strategy_01 configuration without modification
+- Uses ichimoku_default configuration without modification
 - Minimal code duplication
 
 ### ✅ Robustness

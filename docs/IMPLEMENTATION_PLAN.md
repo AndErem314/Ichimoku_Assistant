@@ -19,7 +19,7 @@ Ichimoku_Assistant/
 ├── test_phase1.py
 │
 ├── config/
-│   └── strategies.yaml        # Ichimoku strategy configuration (strategy_01)
+│   └── strategy.yaml         # Ichimoku strategy configuration (ichimoku_default)
 │
 ├── live_monitor/              ✅ Phase 1 - Core Monitoring
 │   ├── __init__.py
@@ -74,10 +74,10 @@ Ichimoku_Assistant/
 - **Purpose**: Calculate Ichimoku and detect LONG/SHORT/EXIT signals
 - **Reuse**: 
   - `strategy/ichimoku_strategy.py` for indicator calculation
-  - `config/strategies.yaml` strategy_01 for signal conditions
+  - `config/strategy.yaml` ichimoku_default for signal conditions
 - **Logic**:
   - Calculate Ichimoku components (Tenkan, Kijun, Senkou A/B, Chikou)
-  - Evaluate buy_conditions from strategy_01:
+  - Evaluate buy_conditions from ichimoku_default:
     - PriceAboveCloud
     - TenkanAboveKijun
     - SpanAaboveSpanB

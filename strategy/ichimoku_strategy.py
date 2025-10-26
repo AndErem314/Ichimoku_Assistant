@@ -476,9 +476,9 @@ if __name__ == "__main__":
     # Initialize analyzer
     analyzer = UnifiedIchimokuAnalyzer()
 
-    # Strategy 01: Cloud-TK Base TK Exit
-    strategy_01_params = IchimokuStrategyConfig.create_parameters()
-    strategy_01_conditions = IchimokuStrategyConfig.create_signal_conditions(
+    # Default strategy: Cloud-TK Base TK Exit
+    default_params = IchimokuStrategyConfig.create_parameters()
+    default_conditions = IchimokuStrategyConfig.create_signal_conditions(
         buy_conditions=[
             SignalType.PRICE_ABOVE_CLOUD,
             SignalType.TENKAN_ABOVE_KIJUN
@@ -500,10 +500,10 @@ if __name__ == "__main__":
         ]
     )
 
-    # Analyze Strategy 01
-    print("Analyzing Strategy 01: Cloud-TK Base TK Exit")
+    # Analyze default strategy
+    print("Analyzing ichimoku_default: Cloud-TK Base TK Exit")
     analysis_01 = analyzer.generate_strategy_analysis(
-        sample_data, strategy_01_params, strategy_01_conditions
+        sample_data, default_params, default_conditions
     )
 
     print(f"Buy Signal: {analysis_01['signal_results']['buy_signal']}")
@@ -514,7 +514,7 @@ if __name__ == "__main__":
     # Analyze Strategy 02
     print("\nAnalyzing Strategy 02: Cloud-TK-SpanA Base TK Exit")
     analysis_02 = analyzer.generate_strategy_analysis(
-        sample_data, strategy_01_params, strategy_02_conditions
+        sample_data, default_params, strategy_02_conditions
     )
 
     print(f"Buy Signal: {analysis_02['signal_results']['buy_signal']}")

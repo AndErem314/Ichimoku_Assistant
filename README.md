@@ -4,7 +4,7 @@ Automated cryptocurrency trading signal monitor using Ichimoku Cloud indicators.
 
 ## ✨ Features
 
-- 📊 **Ichimoku Cloud Analysis** - Advanced technical analysis using strategy_01
+- 📊 **Ichimoku Cloud Analysis** - Advanced technical analysis using the default `ichimoku_default` strategy
 - 🚀 **Signal Detection** - LONG, SHORT, EXIT LONG, EXIT SHORT signals
 - 🤖 **AI-Enhanced Insights** - LLM-powered analysis (Gemini/OpenAI)
 - 💬 **Discord & Telegram Notifications** - Real-time alerts with rich formatting
@@ -111,13 +111,13 @@ llm:
   provider: "gemini"  # or "openai"
 ```
 
-### Strategy Config (`config/strategies.yaml`)
+### Strategy Config (`config/strategy.yaml`)
 
-Uses `strategy_01` - Full Confirmation TK Exit:
-- **LONG signals:** All bullish conditions met
-- **EXIT LONG:** Tenkan below Kijun
-- **SHORT signals:** All bearish conditions met  
-- **EXIT SHORT:** Buy conditions met
+Uses `ichimoku_default` - Full Confirmation, TK Exit:
+- LONG (AND logic): PriceAboveCloud, TenkanAboveKijun, SpanAaboveSpanB, ChikouAboveCloud, ChikouAbovePrice
+- SHORT (AND logic): PriceBelowCloud, TenkanBelowKijun, SpanAbelowSpanB, ChikouBelowCloud, ChikouBelowPrice
+- EXIT LONG: TenkanBelowKijun
+- EXIT SHORT: LONG buy conditions met while in bearish setup
 
 ## 📱 Notifications
 
@@ -172,7 +172,7 @@ Ichimoku_Assistant/
 ├── monitor.py              # Main entry point
 ├── config/
 │   ├── monitor_config.yaml # Monitor configuration
-│   └── strategies.yaml     # Ichimoku strategies
+│   └── strategy.yaml      # Default Ichimoku strategy
 ├── live_monitor/           # Core monitoring
 │   ├── market_data_fetcher.py
 │   ├── signal_detector.py
@@ -219,7 +219,7 @@ The monitor uses Gemini by default. To switch to OpenAI:
 
 ### No signals detected
 - Check that market data is being fetched (`logs/monitor.log`)
-- Verify Ichimoku conditions in `config/strategies.yaml`
+- Verify Ichimoku conditions in `config/strategy.yaml`
 - Signals only trigger when conditions change
 
 ### Notifications not sending

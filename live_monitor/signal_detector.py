@@ -1,7 +1,7 @@
 """
 Signal Detector for Live Monitoring
 
-Calculates Ichimoku indicators and detects trading signals based on strategy_01 configuration.
+Calculates Ichimoku indicators and detects trading signals based on the default Ichimoku strategy (ichimoku_default).
 Supports LONG, SHORT, EXIT LONG, and EXIT SHORT signal detection.
 """
 
@@ -37,7 +37,7 @@ class SignalDetector:
     """
     Detects trading signals using Ichimoku Cloud indicators.
     
-    Implements strategy_01 logic:
+    Implements ichimoku_default logic:
     - LONG: All buy conditions met
     - EXIT LONG: Sell conditions met (exit long position)
     - SHORT: All inverse conditions met
@@ -49,20 +49,20 @@ class SignalDetector:
         Initialize signal detector.
         
         Args:
-            strategy_config_path: Path to strategies.yaml file
-                                 If None, uses default config/strategies.yaml
+            strategy_config_path: Path to strategy.yaml file
+                                 If None, uses default config/strategy.yaml
         """
         self.analyzer = UnifiedIchimokuAnalyzer()
         
         # Load strategy configuration
         if strategy_config_path is None:
             config_dir = Path(__file__).parent.parent / 'config'
-            strategy_config_path = config_dir / 'strategies.yaml'
+            strategy_config_path = config_dir / 'strategy.yaml'
         
         self.strategy_config = self._load_strategy_config(strategy_config_path)
         
-        # Use strategy_01 by default
-        self.strategy = self.strategy_config['strategies']['strategy_01']
+        # Use ichimoku_default by default
+        self.strategy = self.strategy_config['strategies']['ichimoku_default']
         
         # Parse Ichimoku parameters
         self.parameters = self._parse_ichimoku_parameters()

@@ -61,3 +61,5 @@
 2025-10-26 19:41:11,522 - live_monitor.scheduler - INFO - Scheduled analysis at 20:00:15 UTC
 2025-10-26 19:41:11,522 - live_monitor.scheduler - INFO - Setup complete: 6 scheduled runs per day
 2025-10-26 19:41:11,522 - live_monitor.scheduler - INFO - Scheduler started, entering main loop
+2025-10-26 19:52:11,491 - live_monitor.scheduler - INFO - Received keyboard interrupt
+2025-10-26 19:52:11,491 - live_monitor.scheduler - INFO - Stopping scheduler

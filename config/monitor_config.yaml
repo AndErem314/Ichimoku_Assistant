@@ -58,8 +58,8 @@ llm:
 
 # Strategy Configuration
 strategy:
-  # Strategy name from config/strategies.yaml
-  name: "strategy_01"
+  # Strategy name from config/strategy.yaml
+  name: "ichimoku_default"
   
   # Stop loss percentage for notifications
   stop_loss_pct: 4.0

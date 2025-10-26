@@ -1,0 +1,28 @@
+strategies:
+  ichimoku_default:
+    name: "Ichimoku Default (Full Confirmation, TK Exit)"
+    description: "All bullish conditions + Chikou confirmations; exit on Tenkan below Kijun"
+    enabled: true
+    timeframes: ["1h", "4h", "1d"]
+    symbols: ["BTC/USDT"]
+    signal_conditions:
+      buy_conditions: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud", "ChikouAbovePrice"]
+      sell_conditions: ["TenkanBelowKijun"]
+      buy_logic: "AND"
+      sell_logic: "AND"
+    ichimoku_parameters:
+      tenkan_period: 9
+      kijun_period: 26
+      senkou_b_period: 52
+      chikou_offset: 26
+      senkou_offset: 26
+    risk_management:
+      stop_loss_pct: 5.0
+      take_profit_pct: null
+      close_on_sell_signal: true
+      trailing_stop: false
+      max_position_size_pct: 100.0
+      risk_per_trade_pct: 5.0
+    position_sizing:
+      method: "fixed"
+      fixed_size: 1000
