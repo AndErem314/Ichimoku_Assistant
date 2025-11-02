@@ -10,7 +10,7 @@ import sys
 import yaml
 import logging
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Dict, Optional
 
 from live_monitor import MarketDataFetcher, SignalDetector, StateManager
@@ -155,7 +155,7 @@ class CryptoMonitor:
         timeframe = monitoring_config.get('timeframe', '4h')
         data_points = monitoring_config.get('data_points', 300)
         
-        self.logger.info(f"Starting analysis cycle at {datetime.utcnow().isoformat()}")
+        self.logger.info(f"Starting analysis cycle at {datetime.now(UTC).isoformat()}")
         
         for symbol in symbols:
             try:
@@ -175,14 +175,13 @@ class CryptoMonitor:
                 # 2. Detect signal
                 signal_result = self.signal_detector.detect_signal(data, symbol)
                 
-                self.logger.info(
-                    f"{symbol}: {signal_result.signal_type} "
-                    f"(confidence: {signal_result.confidence:.1%})"
-                )
-                
-                # 3. Check if signal changed
-                if self.state_manager.has_signal_changed(symbol, signal_result.signal_type):
-                    self.logger.info(f"New signal for {symbol}: {signal_result.signal_type}")
+                # 3. Check if signal changed (we only notify on changes)
+                changed = self.state_manager.has_signal_changed(symbol, signal_result.signal_type)
+                if changed:
+                    self.logger.info(
+                        f"New signal for {symbol}: {signal_result.signal_type} "
+                        f"(confidence: {signal_result.confidence:.1%})"
+                    )
                     
                     # 4. Format message with LLM analysis
                     formatted = self.message_formatter.format_signal(
@@ -196,7 +195,7 @@ class CryptoMonitor:
                     # 5. Send notifications
                     self._send_notifications(formatted)
                     
-                    # 6. Update state
+                    # 6. Update state to the new signal
                     self.state_manager.update_state(
                         symbol=symbol,
                         signal_type=signal_result.signal_type,
@@ -204,7 +203,17 @@ class CryptoMonitor:
                         timestamp=signal_result.timestamp.isoformat()
                     )
                 else:
-                    self.logger.debug(f"No signal change for {symbol}")
+                    # Persist return-to-NONE transitions even without notifying
+                    if signal_result.signal_type == 'NONE':
+                        self.state_manager.update_state(
+                            symbol=symbol,
+                            signal_type='NONE',
+                            confidence=0.0,
+                            timestamp=signal_result.timestamp.isoformat()
+                        )
+                        self.logger.debug(f"State persisted to NONE for {symbol}")
+                    else:
+                        self.logger.debug(f"No signal change for {symbol} (still {signal_result.signal_type})")
                 
             except Exception as e:
                 self.logger.error(f"Error analyzing {symbol}: {e}", exc_info=True)
