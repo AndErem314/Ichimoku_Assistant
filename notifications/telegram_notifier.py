@@ -123,7 +123,11 @@ class TelegramNotifier:
         # Price and confidence
         message += f"💰 *Price:* ${price:,.2f}\n"
         message += f"📊 *Confidence:* {confidence:.1%}\n"
-        message += f"🛡️ *Stop Loss (4%):* ${stop_loss:,.2f}\n\n"
+        # Include stop loss only for entry signals
+        if signal_type in ['LONG', 'SHORT'] and isinstance(stop_loss, (int, float)):
+            message += f"🛡️ *Stop Loss (4%):* ${stop_loss:,.2f}\n\n"
+        else:
+            message += "\n"
         
         # Ichimoku indicators
         tenkan = ichimoku_values.get('tenkan_sen')

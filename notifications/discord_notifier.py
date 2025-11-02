@@ -125,9 +125,11 @@ class DiscordNotifier:
         # Description with price and confidence
         description = (
             f"**Price:** ${price:,.2f}\n"
-            f"**Confidence:** {confidence:.1%}\n"
-            f"**Stop Loss (4%):** ${stop_loss:,.2f}"
+            f"**Confidence:** {confidence:.1%}"
         )
+        # Include stop loss only for entry signals
+        if signal_type in ['LONG', 'SHORT'] and isinstance(stop_loss, (int, float)):
+            description += f"\n**Stop Loss (4%):** ${stop_loss:,.2f}"
         
         # Build fields for Ichimoku data
         fields = []

@@ -62,7 +62,7 @@ class MessageFormatter:
         Returns:
             Dictionary with formatted signal data including:
             - symbol, signal_type, confidence
-            - price, stop_loss
+            - price, stop_loss (for entry signals only)
             - ichimoku_values
             - llm_analysis (if enabled)
             - timestamp
@@ -72,7 +72,7 @@ class MessageFormatter:
         
         price = ichimoku_values.get('close', 0)
         
-        # Calculate stop loss (4% from current price)
+        # Calculate stop loss only for entry signals (LONG, SHORT)
         stop_loss = self._calculate_stop_loss(price, signal_type)
         
         # Generate LLM analysis if enabled
@@ -98,29 +98,28 @@ class MessageFormatter:
             'timestamp': timestamp
         }
     
-    def _calculate_stop_loss(self, price: float, signal_type: str) -> float:
+    def _calculate_stop_loss(self, price: float, signal_type: str) -> Optional[float]:
         """
-        Calculate stop loss at 4% from current price.
+        Calculate stop loss at 4% from current price for entry signals only.
         
         Args:
             price: Current price
             signal_type: Signal type (LONG/SHORT determines direction)
         
         Returns:
-            Stop loss price
+            Stop loss price or None for exit signals
         """
-        if signal_type in ['LONG', 'EXIT SHORT']:
-            # For LONG positions, stop loss is 4% below
-            return price * 0.96
-        else:
-            # For SHORT positions, stop loss is 4% above
-            return price * 1.04
+        if signal_type in ['LONG', 'SHORT']:
+            # For LONG positions, stop loss is 4% below; for SHORT, 4% above
+            return price * 0.96 if signal_type == 'LONG' else price * 1.04
+        # Exit signals shouldn't include stop loss
+        return None
     
     def _generate_llm_analysis(self,
                               symbol: str,
                               signal_type: str,
                               price: float,
-                              stop_loss: float,
+                              stop_loss: Optional[float],
                               ichimoku_values: Dict,
                               confidence: float) -> Optional[str]:
         """
@@ -135,7 +134,7 @@ class MessageFormatter:
             symbol: Trading pair
             signal_type: Signal type
             price: Current price
-            stop_loss: Calculated stop loss
+            stop_loss: Calculated stop loss (if any)
             ichimoku_values: Ichimoku indicator values
             confidence: Signal confidence
         
@@ -174,7 +173,7 @@ class MessageFormatter:
                          symbol: str,
                          signal_type: str,
                          price: float,
-                         stop_loss: float,
+                         stop_loss: Optional[float],
                          ichimoku_values: Dict,
                          confidence: float) -> str:
         """Build prompt for LLM analysis."""
@@ -195,11 +194,13 @@ class MessageFormatter:
         if isinstance(cloud_bottom, (int, float)):
             cloud_bottom = f"${cloud_bottom:,.2f}"
         
+        # Stop loss line only for entry signals
+        stop_line = f"\n- Stop Loss (4%): ${stop_loss:,.2f}" if isinstance(stop_loss, (int, float)) else ""
+        
         prompt = f"""You are a crypto trading assistant. A {signal_type} signal has been detected for {symbol} on the 4-hour timeframe.
 
 Market Data:
-- Current Price: ${price:,.2f}
-- Stop Loss (4%): ${stop_loss:,.2f}
+- Current Price: ${price:,.2f}{stop_line}
 - Tenkan-sen (Conversion Line): {tenkan}
 - Kijun-sen (Base Line): {kijun}
 - Cloud Status: {cloud_color.capitalize()}
