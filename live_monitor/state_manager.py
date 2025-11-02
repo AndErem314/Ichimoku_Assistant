@@ -99,6 +99,12 @@ class StateManager:
         if timestamp is None:
             timestamp = datetime.utcnow().isoformat()
         
+        # Only record and log when the signal type actually changes
+        current = self.states.get(symbol)
+        if current and current.get('signal_type') == signal_type:
+            logger.debug(f"State unchanged for {symbol}: {signal_type}, not updating timestamp")
+            return
+        
         self.states[symbol] = {
             'signal_type': signal_type,
             'confidence': confidence,

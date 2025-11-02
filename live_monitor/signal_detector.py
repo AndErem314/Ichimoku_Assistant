@@ -161,7 +161,7 @@ class SignalDetector:
                 ichimoku_values=ichimoku_values
             )
             
-            logger.info(f"Detected {signal_type} signal for {symbol} with confidence {confidence:.2%}")
+            logger.debug(f"Detected {signal_type} signal for {symbol} with confidence {confidence:.2%}")
             return result
             
         except Exception as e:
