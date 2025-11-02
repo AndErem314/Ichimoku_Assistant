@@ -10,6 +10,8 @@ import pandas as pd
 from datetime import datetime
 from typing import Optional
 import logging
+import time
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +22,15 @@ class MarketDataFetcher:
     Focused on 4h timeframe with sufficient historical data for Ichimoku calculation.
     """
     
-    def __init__(self, exchange_name: str = 'binance'):
+    def __init__(self, exchange_name: str = 'binance', *, max_retries: int = 0, retry_delay_seconds: int = 5, backoff_factor: float = 2.0):
         """
         Initialize market data fetcher.
         
         Args:
             exchange_name: Name of the exchange (default: binance)
+            max_retries: Number of retries on transient network errors
+            retry_delay_seconds: Base delay between retries
+            backoff_factor: Exponential backoff multiplier
         """
         self.exchange = getattr(ccxt, exchange_name)({
             'timeout': 30000,
@@ -34,6 +39,9 @@ class MarketDataFetcher:
                 'defaultType': 'spot',
             }
         })
+        self.max_retries = max(0, int(max_retries))
+        self.retry_delay_seconds = max(0, int(retry_delay_seconds))
+        self.backoff_factor = float(backoff_factor) if backoff_factor > 0 else 1.0
         
         logger.info(f"Initialized MarketDataFetcher with {exchange_name}")
     
@@ -53,47 +61,74 @@ class MarketDataFetcher:
         Returns:
             DataFrame with OHLCV data and timestamp index
         """
-        try:
-            logger.info(f"Fetching {limit} candles of {timeframe} data for {symbol}")
-            
-            # Fetch OHLCV data
-            ohlcv = self.exchange.fetch_ohlcv(
-                symbol=symbol,
-                timeframe=timeframe,
-                limit=limit
-            )
-            
-            if not ohlcv:
-                logger.warning(f"No data received for {symbol}")
-                return pd.DataFrame()
-            
-            # Convert to DataFrame
-            df = pd.DataFrame(
-                ohlcv,
-                columns=['timestamp', 'open', 'high', 'low', 'close', 'volume']
-            )
-            
-            # Convert timestamp to datetime
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-            df.set_index('timestamp', inplace=True)
-            
-            # Add symbol identifier
-            df['symbol'] = symbol
-            
-            logger.info(f"Successfully fetched {len(df)} candles for {symbol}")
-            logger.debug(f"Data range: {df.index[0]} to {df.index[-1]}")
-            
-            return df
-            
-        except ccxt.NetworkError as e:
-            logger.error(f"Network error fetching data for {symbol}: {e}")
-            raise
-        except ccxt.ExchangeError as e:
-            logger.error(f"Exchange error fetching data for {symbol}: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error fetching data for {symbol}: {e}")
-            raise
+        attempt = 0
+        last_err = None
+        while True:
+            try:
+                logger.info(f"Fetching {limit} candles of {timeframe} data for {symbol}")
+                
+                # Fetch OHLCV data
+                ohlcv = self.exchange.fetch_ohlcv(
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    limit=limit
+                )
+                
+                if not ohlcv:
+                    logger.warning(f"No data received for {symbol}")
+                    return pd.DataFrame()
+                
+                # Convert to DataFrame
+                df = pd.DataFrame(
+                    ohlcv,
+                    columns=['timestamp', 'open', 'high', 'low', 'close', 'volume']
+                )
+                
+                # Convert timestamp to datetime
+                df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+                df.set_index('timestamp', inplace=True)
+                
+                # Add symbol identifier
+                df['symbol'] = symbol
+                
+                logger.info(f"Successfully fetched {len(df)} candles for {symbol}")
+                logger.debug(f"Data range: {df.index[0]} to {df.index[-1]}")
+                
+                return df
+                
+            except (ccxt.NetworkError, ccxt.ExchangeNotAvailable, ccxt.DDoSProtection) as e:
+                last_err = e
+                if attempt < self.max_retries:
+                    delay = self.retry_delay_seconds * (self.backoff_factor ** attempt)
+                    delay += random.uniform(0, max(0.5, 0.5 * self.retry_delay_seconds))
+                    attempt += 1
+                    logger.warning(
+                        f"Transient error fetching {symbol} OHLCV (attempt {attempt}/{self.max_retries}): {e}. "
+                        f"Retrying in {delay:.1f}s"
+                    )
+                    time.sleep(delay)
+                    continue
+                logger.error(f"Network error fetching data for {symbol}: {e}")
+                raise
+            except ccxt.ExchangeError as e:
+                # Do not retry on immediate exchange errors (bad params, etc.)
+                logger.error(f"Exchange error fetching data for {symbol}: {e}")
+                raise
+            except Exception as e:
+                # Some network stacks propagate different exceptions
+                last_err = e
+                if attempt < self.max_retries:
+                    delay = self.retry_delay_seconds * (self.backoff_factor ** attempt)
+                    delay += random.uniform(0, max(0.5, 0.5 * self.retry_delay_seconds))
+                    attempt += 1
+                    logger.warning(
+                        f"Error fetching {symbol} OHLCV (attempt {attempt}/{self.max_retries}): {e}. "
+                        f"Retrying in {delay:.1f}s"
+                    )
+                    time.sleep(delay)
+                    continue
+                logger.error(f"Unexpected error fetching data for {symbol}: {e}")
+                raise
     
     def fetch_multiple_symbols(self, 
                               symbols: list[str], 

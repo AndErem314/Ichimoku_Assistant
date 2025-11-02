@@ -82,8 +82,12 @@ class CryptoMonitor:
     
     def _initialize_components(self):
         """Initialize all monitoring components."""
-        # Market data fetcher
-        self.data_fetcher = MarketDataFetcher()
+        # Market data fetcher with retry settings from config
+        err_cfg = self.config.get('error_handling', {})
+        self.data_fetcher = MarketDataFetcher(
+            max_retries=err_cfg.get('max_retries', 0),
+            retry_delay_seconds=err_cfg.get('retry_delay_seconds', 5)
+        )
         
         # Signal detector
         self.signal_detector = SignalDetector()
