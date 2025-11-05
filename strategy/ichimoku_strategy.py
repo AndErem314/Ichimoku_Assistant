@@ -3,6 +3,12 @@ Unified Ichimoku Cloud Analysis System - Strategy-Oriented Version
 
 This module provides a comprehensive calculator and signal detection system
 for the Ichimoku Cloud indicator, designed to work with strategy configurations.
+
+Signal Architecture:
+- Uses StrategyRules with explicit long_entry/short_entry/long_exit/short_exit
+- All signals use snake_case naming (e.g., price_above_cloud, tenkan_above_kijun)
+- Supports AND/OR logic for combining multiple conditions
+- Designed for monitoring/alerting (not automated trading)
 """
 
 import pandas as pd

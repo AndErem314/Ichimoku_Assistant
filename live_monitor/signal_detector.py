@@ -1,8 +1,14 @@
 """
 Signal Detector for Live Monitoring
 
-Calculates Ichimoku indicators and detects trading signals based on the default Ichimoku strategy (ichimoku_default).
+Calculates Ichimoku indicators and detects trading signals based on strategy configuration.
 Supports LONG, SHORT, EXIT LONG, and EXIT SHORT signal detection.
+
+Architecture:
+- Uses StrategyRules from config (long_entry/short_entry/long_exit/short_exit)
+- All signals use snake_case naming
+- Leverages check_position_signals() for consistent signal evaluation
+- Monitoring only - does NOT execute actual trades
 """
 
 import pandas as pd

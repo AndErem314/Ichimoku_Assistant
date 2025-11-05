@@ -22,6 +22,12 @@ class StateManager:
     - Current signal type (LONG, SHORT, EXIT LONG, EXIT SHORT, NONE)
     - Last signal change timestamp
     - Signal confidence
+    - Previous signal (for context)
+    - Signal transition count
+    
+    NOTE: This is a monitoring system - does NOT track actual positions.
+    EXIT signals are always sent regardless of whether you took the trade.
+    You decide manually whether to trade based on the signals.
     
     Persists state to JSON file to survive restarts.
     """
@@ -99,21 +105,29 @@ class StateManager:
         if timestamp is None:
             timestamp = datetime.utcnow().isoformat()
         
-        # Only record and log when the signal type actually changes
+        # Get current state
         current = self.states.get(symbol)
+        
+        # Check if signal changed
         if current and current.get('signal_type') == signal_type:
             logger.debug(f"State unchanged for {symbol}: {signal_type}, not updating timestamp")
             return
+        
+        # Track previous signal for context
+        previous_signal = current.get('signal_type', 'NONE') if current else 'NONE'
+        transition_count = current.get('transition_count', 0) + 1 if current else 1
         
         self.states[symbol] = {
             'signal_type': signal_type,
             'confidence': confidence,
             'timestamp': timestamp,
+            'previous_signal': previous_signal,
+            'transition_count': transition_count,
             'details': details or {}
         }
         
         self._save_states()
-        logger.info(f"Updated state for {symbol}: {signal_type} (confidence: {confidence:.2%})")
+        logger.info(f"Updated state for {symbol}: {previous_signal} → {signal_type} (confidence: {confidence:.2%})")
     
     def has_signal_changed(self, symbol: str, new_signal_type: str) -> bool:
         """
@@ -203,13 +217,42 @@ class StateManager:
                 'EXIT LONG': 0,
                 'EXIT SHORT': 0,
                 'NONE': 0
-            }
+            },
+            'total_transitions': 0
         }
         
         for state in self.states.values():
             signal_type = state.get('signal_type', 'NONE')
             summary['signals_by_type'][signal_type] = summary['signals_by_type'].get(signal_type, 0) + 1
+            summary['total_transitions'] += state.get('transition_count', 0)
             if signal_type != 'NONE':
                 summary['active_signals'] += 1
         
         return summary
+    
+    def get_signal_context(self, symbol: str) -> Optional[Dict]:
+        """
+        Get signal context for a symbol (current and previous signals).
+        
+        Useful for understanding signal flow without tracking positions.
+        
+        Args:
+            symbol: Trading pair
+        
+        Returns:
+            Dictionary with current_signal, previous_signal, transitions, etc.
+            None if symbol not found
+        """
+        state = self.get_state(symbol)
+        if not state:
+            return None
+        
+        return {
+            'symbol': symbol,
+            'current_signal': state.get('signal_type', 'NONE'),
+            'previous_signal': state.get('previous_signal', 'NONE'),
+            'confidence': state.get('confidence', 0.0),
+            'timestamp': state.get('timestamp'),
+            'transitions': state.get('transition_count', 0),
+            'signal_flow': f"{state.get('previous_signal', 'NONE')} → {state.get('signal_type', 'NONE')}"
+        }

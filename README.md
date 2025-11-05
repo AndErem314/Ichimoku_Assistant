@@ -114,10 +114,12 @@ llm:
 ### Strategy Config (`config/strategy.yaml`)
 
 Uses `ichimoku_default` - Full Confirmation, TK Exit:
-- LONG (AND logic): PriceAboveCloud, TenkanAboveKijun, SpanAaboveSpanB, ChikouAboveCloud, ChikouAbovePrice
-- SHORT (AND logic): PriceBelowCloud, TenkanBelowKijun, SpanAbelowSpanB, ChikouBelowCloud, ChikouBelowPrice
-- EXIT LONG: TenkanBelowKijun
-- EXIT SHORT: LONG buy conditions met while in bearish setup
+- **LONG ENTRY** (AND logic): price_above_cloud, tenkan_above_kijun, span_a_above_span_b, chikou_above_cloud, chikou_above_price
+- **SHORT ENTRY** (AND logic): price_below_cloud, tenkan_below_kijun, span_a_below_span_b, chikou_below_cloud, chikou_below_price
+- **EXIT LONG**: tenkan_below_kijun
+- **EXIT SHORT**: tenkan_above_kijun
+
+All signal names use **snake_case** for consistency with DataFrame columns.
 
 ## 📱 Notifications
 
@@ -209,11 +211,13 @@ The monitor uses Gemini by default. To switch to OpenAI:
 
 ## 📊 Signals Explained
 
-- **LONG** - All bullish conditions met, enter long position
-- **SHORT** - All bearish conditions met, enter short position
-- **EXIT LONG** - Exit long position (Tenkan crossed below Kijun)
-- **EXIT SHORT** - Exit short position (bullish conditions met)
+- **LONG** - All bullish conditions met, consider entering long position
+- **SHORT** - All bearish conditions met, consider entering short position
+- **EXIT LONG** - Bullish setup ending, consider exiting long
+- **EXIT SHORT** - Bearish setup ending, consider exiting short
 - **NONE** - No actionable signal (not sent as notification)
+
+**Important:** This is a **monitoring/alerting system only**. It does NOT execute trades automatically. You decide whether to trade based on the signals. EXIT signals are sent regardless of whether you took the entry signal.
 
 ## 🛠️ Troubleshooting
 
