@@ -56,7 +56,7 @@ def load_llm_config() -> LLMConfig:
     openai_api_key = os.getenv('OPENAI_API_KEY')
     openai_model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
     gemini_api_key = os.getenv('GEMINI_API_KEY')
-    gemini_model = os.getenv('GEMINI_MODEL', 'gemini-2.5-pro')
+    gemini_model = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
     try:
         temperature = float(os.getenv('LLM_TEMPERATURE', '0.2'))
     except ValueError:
