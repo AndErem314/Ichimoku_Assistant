@@ -29,10 +29,9 @@ Ichimoku_Assistant/
 │   └── scheduler.py           # Run at 00:00:15, 04:00:15, etc.
 │
 ├── notifications/             ✅ Phase 2 - Alert System
-│   ├── __init__.py
+│   ├── __init__.hjddscdscdwcfklwdhnfcpy
 │   ├── discord_notifier.py    # Discord webhook notifications
-│   ├── telegram_notifier.py   # Telegram bot API notifications
-│   └── message_formatter.py   # LLM-enhanced messages (Gemini/OpenAI)
+ │   └── message_formatter.py   # LLM-enhanced messages (Gemini/OpenAI)
 │
 ├── llm_analysis/              # Minimal LLM support (cleaned up)
 │   ├── __init__.py

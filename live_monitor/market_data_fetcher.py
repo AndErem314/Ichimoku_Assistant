@@ -2,7 +2,7 @@
 Market Data Fetcher for Live Monitoring
 
 Fetches real-time OHLCV data from Binance for signal analysis.
-Optimized for 4-hour timeframe monitoring with 300 candles.
+Optimized for 4-hour timeframe monitoring with 250 candles.
 """
 
 import ccxt
@@ -48,14 +48,14 @@ class MarketDataFetcher:
     def fetch_latest_data(self, 
                          symbol: str, 
                          timeframe: str = '4h', 
-                         limit: int = 300) -> pd.DataFrame:
+                         limit: int = 250) -> pd.DataFrame:
         """
         Fetch the latest OHLCV data for a trading pair.
         
         Args:
             symbol: Trading pair (e.g., 'BTC/USDT', 'ETH/USDT', 'SOL/USDT')
             timeframe: Timeframe for candles (default: '4h')
-            limit: Number of candles to fetch (default: 300)
+            limit: Number of candles to fetch (default: 250)
                    300 x 4h = 50 days, sufficient for Senkou Span B (52 periods)
         
         Returns:
@@ -133,14 +133,14 @@ class MarketDataFetcher:
     def fetch_multiple_symbols(self, 
                               symbols: list[str], 
                               timeframe: str = '4h', 
-                              limit: int = 300) -> dict[str, pd.DataFrame]:
+                              limit: int = 250) -> dict[str, pd.DataFrame]:
         """
         Fetch data for multiple symbols.
         
         Args:
             symbols: List of trading pairs (e.g., ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'])
             timeframe: Timeframe for candles (default: '4h')
-            limit: Number of candles to fetch (default: 300)
+            limit: Number of candles to fetch (default: 250)
         
         Returns:
             Dictionary mapping symbol to DataFrame
