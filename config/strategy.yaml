@@ -6,10 +6,10 @@ strategies:
     timeframes: ["1h", "4h", "1d"]
     symbols: ["BTC/USDT"]
     signal_conditions:
-      long_entry: ["PriceAboveCloud", "TenkanAboveKijun", "SpanAaboveSpanB", "ChikouAboveCloud", "ChikouAbovePrice"]
-      short_entry: ["PriceBelowCloud", "TenkanBelowKijun", "SpanAbelowSpanB", "ChikouBelowCloud", "ChikouBelowPrice"]
-      long_exit: ["TenkanBelowKijun"]
-      short_exit: ["TenkanAboveKijun"]
+      long_entry: ["price_above_cloud", "tenkan_above_kijun", "span_a_above_span_b", "chikou_above_cloud", "chikou_above_price"]
+      short_entry: ["price_below_cloud", "tenkan_below_kijun", "span_a_below_span_b", "chikou_below_cloud", "chikou_below_price"]
+      long_exit: ["tenkan_below_kijun"]
+      short_exit: ["tenkan_above_kijun"]
       long_entry_logic: "AND"
       short_entry_logic: "AND"
       long_exit_logic: "AND"

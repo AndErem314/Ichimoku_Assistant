@@ -8,7 +8,7 @@ Supports LONG, SHORT, EXIT LONG, and EXIT SHORT signal detection.
 import pandas as pd
 import yaml
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
 import logging
 from dataclasses import dataclass
 
@@ -16,7 +16,7 @@ from strategy.ichimoku_strategy import (
     UnifiedIchimokuAnalyzer,
     IchimokuParameters,
     SignalType,
-    SignalConditions
+    StrategyRules
 )
 
 logger = logging.getLogger(__name__)
@@ -37,11 +37,11 @@ class SignalDetector:
     """
     Detects trading signals using Ichimoku Cloud indicators.
     
-    Implements ichimoku_default logic:
-    - LONG: All buy conditions met
-    - EXIT LONG: Sell conditions met (exit long position)
-    - SHORT: All inverse conditions met
-    - EXIT SHORT: Buy conditions met (exit short position)
+    Implements ichimoku_default logic with explicit long/short entry/exit:
+    - LONG: All long_entry conditions met
+    - SHORT: All short_entry conditions met
+    - EXIT LONG: All long_exit conditions met
+    - EXIT SHORT: All short_exit conditions met
     """
     
     def __init__(self, strategy_config_path: Optional[str] = None):
@@ -67,8 +67,8 @@ class SignalDetector:
         # Parse Ichimoku parameters
         self.parameters = self._parse_ichimoku_parameters()
         
-        # Parse signal conditions
-        self.signal_conditions = self._parse_signal_conditions()
+        # Parse strategy rules (long/short entry/exit)
+        self.strategy_rules = self._parse_strategy_rules()
         
         logger.info(f"Initialized SignalDetector with strategy: {self.strategy['name']}")
     
@@ -94,28 +94,38 @@ class SignalDetector:
             senkou_offset=params['senkou_offset']
         )
     
-    def _parse_signal_conditions(self) -> SignalConditions:
-        """Parse signal conditions from strategy config."""
+    def _parse_strategy_rules(self) -> StrategyRules:
+        """Parse strategy rules (long/short entry/exit) from config."""
         conditions = self.strategy['signal_conditions']
         
         # Convert string conditions to SignalType enums
-        buy_conditions = [
-            SignalType(cond) for cond in conditions['buy_conditions']
+        long_entry = [
+            SignalType(cond) for cond in conditions['long_entry']
         ]
-        sell_conditions = [
-            SignalType(cond) for cond in conditions['sell_conditions']
+        short_entry = [
+            SignalType(cond) for cond in conditions['short_entry']
+        ]
+        long_exit = [
+            SignalType(cond) for cond in conditions['long_exit']
+        ]
+        short_exit = [
+            SignalType(cond) for cond in conditions['short_exit']
         ]
         
-        return SignalConditions(
-            buy_conditions=buy_conditions,
-            sell_conditions=sell_conditions,
-            buy_logic=conditions['buy_logic'],
-            sell_logic=conditions['sell_logic']
+        return StrategyRules(
+            long_entry=long_entry,
+            short_entry=short_entry,
+            long_exit=long_exit,
+            short_exit=short_exit,
+            long_entry_logic=conditions.get('long_entry_logic', 'AND'),
+            short_entry_logic=conditions.get('short_entry_logic', 'AND'),
+            long_exit_logic=conditions.get('long_exit_logic', 'AND'),
+            short_exit_logic=conditions.get('short_exit_logic', 'AND')
         )
     
     def detect_signal(self, data: pd.DataFrame, symbol: str) -> SignalResult:
         """
-        Detect trading signal from OHLCV data.
+        Detect trading signal from OHLCV data using StrategyRules.
         
         Args:
             data: DataFrame with OHLCV data
@@ -135,18 +145,18 @@ class SignalDetector:
                 ichimoku_df, self.parameters
             )
             
-            # Check strategy signals
-            signal_results = self.analyzer.check_strategy_signals(
-                signals_df, self.signal_conditions
+            # Use check_position_signals to evaluate all entry/exit conditions
+            position_signals = self.analyzer.check_position_signals(
+                signals_df, self.strategy_rules
             )
             
             # Get latest completed bar (second to last)
             latest_idx = -2 if len(signals_df) > 1 else -1
             latest = signals_df.iloc[latest_idx]
             
-            # Determine signal type
+            # Determine signal type from position signals
             signal_type, confidence = self._determine_signal_type(
-                signal_results, latest
+                position_signals, latest
             )
             
             # Extract Ichimoku values for reporting
@@ -155,9 +165,9 @@ class SignalDetector:
             result = SignalResult(
                 signal_type=signal_type,
                 symbol=symbol,
-                timestamp=signals_df.index[latest_idx],
+                timestamp=position_signals['timestamp'],
                 confidence=confidence,
-                details=signal_results,
+                details=position_signals,
                 ichimoku_values=ichimoku_values
             )
             
@@ -169,97 +179,62 @@ class SignalDetector:
             raise
     
     def _determine_signal_type(self, 
-                               signal_results: Dict, 
+                               position_signals: Dict, 
                                latest_row: pd.Series) -> Tuple[str, float]:
         """
-        Determine signal type based on buy/sell conditions.
+        Determine signal type from position_signals (long/short entry/exit).
         
         Logic:
-        - LONG: All buy conditions met
-        - EXIT LONG: Sell conditions met
-        - SHORT: All inverse (bearish) conditions met
-        - EXIT SHORT: Buy conditions met while in bearish setup
+        - LONG: long_entry is True
+        - SHORT: short_entry is True
+        - EXIT LONG: long_exit is True
+        - EXIT SHORT: short_exit is True
+        - NONE: No conditions met
         
         Returns:
             Tuple of (signal_type, confidence)
         """
-        buy_signal = signal_results['buy_signal']
-        sell_signal = signal_results['sell_signal']
+        # Priority: Entry signals first, then exit signals
+        if position_signals['long_entry']:
+            confidence = self._calculate_confidence(
+                self.strategy_rules.long_entry, latest_row
+            )
+            return "LONG", confidence
         
-        # Calculate confidence (percentage of conditions met)
-        buy_conditions_met = len(signal_results['buy_conditions_met'])
-        total_buy_conditions = len(self.signal_conditions.buy_conditions)
-        buy_confidence = buy_conditions_met / total_buy_conditions if total_buy_conditions > 0 else 0
+        elif position_signals['short_entry']:
+            confidence = self._calculate_confidence(
+                self.strategy_rules.short_entry, latest_row
+            )
+            return "SHORT", confidence
         
-        sell_conditions_met = len(signal_results['sell_conditions_met'])
-        total_sell_conditions = len(self.signal_conditions.sell_conditions)
-        sell_confidence = sell_conditions_met / total_sell_conditions if total_sell_conditions > 0 else 0
+        elif position_signals['long_exit']:
+            confidence = self._calculate_confidence(
+                self.strategy_rules.long_exit, latest_row
+            )
+            return "EXIT LONG", confidence
         
-        # Detect SHORT conditions (inverse of LONG)
-        short_signal = self._check_short_conditions(latest_row)
-        
-        # Determine signal type
-        if buy_signal:
-            # Check if this is EXIT SHORT or new LONG
-            if short_signal:
-                return "EXIT SHORT", buy_confidence
-            else:
-                return "LONG", buy_confidence
-        
-        elif sell_signal:
-            # This is EXIT LONG
-            return "EXIT LONG", sell_confidence
-        
-        elif short_signal:
-            # Pure SHORT signal (all bearish conditions met)
-            short_confidence = self._calculate_short_confidence(latest_row)
-            return "SHORT", short_confidence
+        elif position_signals['short_exit']:
+            confidence = self._calculate_confidence(
+                self.strategy_rules.short_exit, latest_row
+            )
+            return "EXIT SHORT", confidence
         
         else:
             # No actionable signal
             return "NONE", 0.0
     
-    def _check_short_conditions(self, latest_row: pd.Series) -> bool:
-        """
-        Check if SHORT conditions are met (inverse of LONG conditions).
+    def _calculate_confidence(self, conditions: List[SignalType], latest_row: pd.Series) -> float:
+        """Calculate confidence based on percentage of conditions met."""
+        if not conditions:
+            return 0.0
         
-        SHORT conditions:
-        - Price below cloud
-        - Tenkan below Kijun
-        - Span A below Span B
-        - Chikou below cloud
-        - Chikou below price
-        """
-        try:
-            conditions = [
-                latest_row.get('price_below_cloud', False),
-                latest_row.get('tenkan_below_kijun', False),
-                latest_row.get('SpanAbelowSpanB', False),
-                latest_row.get('chikou_below_cloud', False),
-                latest_row.get('chikou_below_price', False)
-            ]
-            
-            # All conditions must be True for SHORT signal
-            return all(conditions)
-            
-        except Exception as e:
-            logger.error(f"Error checking SHORT conditions: {e}")
-            return False
-    
-    def _calculate_short_confidence(self, latest_row: pd.Series) -> float:
-        """Calculate confidence for SHORT signal."""
-        short_conditions = [
-            latest_row.get('price_below_cloud', False),
-            latest_row.get('tenkan_below_kijun', False),
-            latest_row.get('SpanAbelowSpanB', False),
-            latest_row.get('chikou_below_cloud', False),
-            latest_row.get('chikou_below_price', False)
-        ]
+        met = 0
+        for condition in conditions:
+            column_name = self.analyzer.signal_mapping.get(condition)
+            if column_name and latest_row.get(column_name, False):
+                met += 1
         
-        met = sum(short_conditions)
-        total = len(short_conditions)
-        
-        return met / total if total > 0 else 0.0
+        return met / len(conditions)
     
     def _extract_ichimoku_values(self, latest_row: pd.Series) -> Dict:
         """Extract Ichimoku indicator values for reporting."""
@@ -282,10 +257,14 @@ class SignalDetector:
             'description': self.strategy['description'],
             'timeframes': self.strategy['timeframes'],
             'symbols': self.strategy['symbols'],
-            'buy_conditions': [cond.value for cond in self.signal_conditions.buy_conditions],
-            'sell_conditions': [cond.value for cond in self.signal_conditions.sell_conditions],
-            'buy_logic': self.signal_conditions.buy_logic,
-            'sell_logic': self.signal_conditions.sell_logic,
+            'long_entry_conditions': [cond.value for cond in self.strategy_rules.long_entry],
+            'short_entry_conditions': [cond.value for cond in self.strategy_rules.short_entry],
+            'long_exit_conditions': [cond.value for cond in self.strategy_rules.long_exit],
+            'short_exit_conditions': [cond.value for cond in self.strategy_rules.short_exit],
+            'long_entry_logic': self.strategy_rules.long_entry_logic,
+            'short_entry_logic': self.strategy_rules.short_entry_logic,
+            'long_exit_logic': self.strategy_rules.long_exit_logic,
+            'short_exit_logic': self.strategy_rules.short_exit_logic,
             'ichimoku_parameters': {
                 'tenkan_period': self.parameters.tenkan_period,
                 'kijun_period': self.parameters.kijun_period,
