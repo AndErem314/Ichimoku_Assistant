@@ -42,11 +42,24 @@ class IchimokuParameters:
 
 @dataclass
 class SignalConditions:
-    """Signal conditions for strategy."""
+    """Signal conditions for strategy (legacy buy/sell)."""
     buy_conditions: List[SignalType]
     sell_conditions: List[SignalType]
     buy_logic: str = "AND"  # AND or OR
     sell_logic: str = "AND"  # AND or OR
+
+
+@dataclass
+class StrategyRules:
+    """Explicit long/short entry/exit rules."""
+    long_entry: List[SignalType]
+    short_entry: List[SignalType]
+    long_exit: List[SignalType]
+    short_exit: List[SignalType]
+    long_entry_logic: str = "AND"
+    short_entry_logic: str = "AND"
+    long_exit_logic: str = "AND"
+    short_exit_logic: str = "AND"
 
 
 class UnifiedIchimokuAnalyzer:
@@ -67,8 +80,8 @@ class UnifiedIchimokuAnalyzer:
             SignalType.PRICE_BELOW_CLOUD: 'price_below_cloud',
             SignalType.TENKAN_ABOVE_KIJUN: 'tenkan_above_kijun',
             SignalType.TENKAN_BELOW_KIJUN: 'tenkan_below_kijun',
-            SignalType.SPAN_A_ABOVE_SPAN_B: 'SpanAaboveSpanB',
-            SignalType.SPAN_A_BELOW_SPAN_B: 'SpanAbelowSpanB',
+            SignalType.SPAN_A_ABOVE_SPAN_B: 'span_a_above_span_b',
+            SignalType.SPAN_A_BELOW_SPAN_B: 'span_a_below_span_b',
             SignalType.CHIKOU_ABOVE_PRICE: 'chikou_above_price',
             SignalType.CHIKOU_BELOW_PRICE: 'chikou_below_price',
             SignalType.CHIKOU_ABOVE_CLOUD: 'chikou_above_cloud',
@@ -118,7 +131,8 @@ class UnifiedIchimokuAnalyzer:
         result_df['senkou_span_b'] = senkou_b_raw.shift(parameters.senkou_offset)
 
         # Chikou Span
-        result_df['chikou_span'] = result_df['close'].shift(-parameters.chikou_offset)
+        # Chikou Span (lagging): past close at current index
+        result_df['chikou_span'] = result_df['close'].shift(parameters.chikou_offset)
 
         # Calculate derived metrics
         result_df = self._calculate_derived_metrics(result_df)
@@ -140,9 +154,9 @@ class UnifiedIchimokuAnalyzer:
             result_df['senkou_span_a'] >= result_df['senkou_span_b'], 'green', 'red'
         )
 
-        # Span relationships for strategies
-        result_df['SpanAaboveSpanB'] = result_df['senkou_span_a'] > result_df['senkou_span_b']
-        result_df['SpanAbelowSpanB'] = result_df['senkou_span_a'] < result_df['senkou_span_b']
+        # Span relationships for strategies (normalized to snake_case)
+        result_df['span_a_above_span_b'] = result_df['senkou_span_a'] > result_df['senkou_span_b']
+        result_df['span_a_below_span_b'] = result_df['senkou_span_a'] < result_df['senkou_span_b']
 
         return result_df
 
@@ -184,80 +198,52 @@ class UnifiedIchimokuAnalyzer:
         return signal_df
 
     def _detect_price_above_cloud(self, df: pd.DataFrame, mask: pd.Series) -> pd.Series:
-        """Detect when price is above the cloud."""
-        signal = pd.Series(False, index=df.index)
-        cloud_top = df[['senkou_span_a', 'senkou_span_b']].max(axis=1)
-        signal[mask] = (df['close'] > cloud_top)[mask]
-        return signal
+        """Detect when price is above the cloud (uses precomputed cloud_top)."""
+        signal = (df["close"] > df["cloud_top"]) & mask
+        return signal.astype(bool)
 
     def _detect_price_below_cloud(self, df: pd.DataFrame, mask: pd.Series) -> pd.Series:
-        """Detect when price is below the cloud."""
-        signal = pd.Series(False, index=df.index)
-        cloud_bottom = df[['senkou_span_a', 'senkou_span_b']].min(axis=1)
-        signal[mask] = (df['close'] < cloud_bottom)[mask]
-        return signal
+        """Detect when price is below the cloud (uses precomputed cloud_bottom)."""
+        signal = (df["close"] < df["cloud_bottom"]) & mask
+        return signal.astype(bool)
 
     def _detect_tenkan_above_kijun(self, df: pd.DataFrame, mask: pd.Series) -> pd.Series:
         """Detect when Tenkan is above Kijun."""
-        signal = pd.Series(False, index=df.index)
-        signal[mask] = (df['tenkan_sen'] > df['kijun_sen'])[mask]
-        return signal
+        signal = (df["tenkan_sen"] > df["kijun_sen"]) & mask
+        return signal.astype(bool)
 
     def _detect_tenkan_below_kijun(self, df: pd.DataFrame, mask: pd.Series) -> pd.Series:
         """Detect when Tenkan is below Kijun."""
-        signal = pd.Series(False, index=df.index)
-        signal[mask] = (df['tenkan_sen'] < df['kijun_sen'])[mask]
-        return signal
+        signal = (df["tenkan_sen"] < df["kijun_sen"]) & mask
+        return signal.astype(bool)
 
     def _detect_chikou_above_price(self, df: pd.DataFrame, mask: pd.Series,
                                    parameters: IchimokuParameters) -> pd.Series:
-        """Detect when Chikou is above historical price."""
-        signal = pd.Series(False, index=df.index)
-        for i in range(parameters.chikou_offset, len(df)):
-            if mask.iloc[i] and pd.notna(df['chikou_span'].iloc[i]):
-                historical_price = df['close'].iloc[i - parameters.chikou_offset]
-                signal.iloc[i] = df['chikou_span'].iloc[i] > historical_price
-        return signal
+        """Detect when current close is above price at chikou_offset ago."""
+        hist_price = df['close'].shift(parameters.chikou_offset)
+        signal = (df['close'] > hist_price) & mask
+        return signal.astype(bool)
 
     def _detect_chikou_below_price(self, df: pd.DataFrame, mask: pd.Series,
                                    parameters: IchimokuParameters) -> pd.Series:
-        """Detect when Chikou is below historical price."""
-        signal = pd.Series(False, index=df.index)
-        for i in range(parameters.chikou_offset, len(df)):
-            if mask.iloc[i] and pd.notna(df['chikou_span'].iloc[i]):
-                historical_price = df['close'].iloc[i - parameters.chikou_offset]
-                signal.iloc[i] = df['chikou_span'].iloc[i] < historical_price
-        return signal
+        """Detect when current close is below price at chikou_offset ago."""
+        hist_price = df['close'].shift(parameters.chikou_offset)
+        signal = (df['close'] < hist_price) & mask
+        return signal.astype(bool)
 
     def _detect_chikou_above_cloud(self, df: pd.DataFrame, mask: pd.Series,
                                    parameters: IchimokuParameters) -> pd.Series:
-        """Detect when Chikou is above historical cloud."""
-        signal = pd.Series(False, index=df.index)
-        for i in range(parameters.chikou_offset, len(df)):
-            if mask.iloc[i] and pd.notna(df['chikou_span'].iloc[i]):
-                hist_idx = i - parameters.chikou_offset
-                if hist_idx - parameters.senkou_offset >= 0:
-                    hist_senkou_a = df['senkou_span_a'].iloc[hist_idx]
-                    hist_senkou_b = df['senkou_span_b'].iloc[hist_idx]
-                    if pd.notna(hist_senkou_a) and pd.notna(hist_senkou_b):
-                        hist_cloud_top = max(hist_senkou_a, hist_senkou_b)
-                        signal.iloc[i] = df['chikou_span'].iloc[i] > hist_cloud_top
-        return signal
+        """Detect when current close is above cloud at chikou_offset ago."""
+        hist_cloud_top = df['cloud_top'].shift(parameters.chikou_offset)
+        signal = (df['close'] > hist_cloud_top) & mask
+        return signal.astype(bool)
 
     def _detect_chikou_below_cloud(self, df: pd.DataFrame, mask: pd.Series,
                                    parameters: IchimokuParameters) -> pd.Series:
-        """Detect when Chikou is below historical cloud."""
-        signal = pd.Series(False, index=df.index)
-        for i in range(parameters.chikou_offset, len(df)):
-            if mask.iloc[i] and pd.notna(df['chikou_span'].iloc[i]):
-                hist_idx = i - parameters.chikou_offset
-                if hist_idx - parameters.senkou_offset >= 0:
-                    hist_senkou_a = df['senkou_span_a'].iloc[hist_idx]
-                    hist_senkou_b = df['senkou_span_b'].iloc[hist_idx]
-                    if pd.notna(hist_senkou_a) and pd.notna(hist_senkou_b):
-                        hist_cloud_bottom = min(hist_senkou_a, hist_senkou_b)
-                        signal.iloc[i] = df['chikou_span'].iloc[i] < hist_cloud_bottom
-        return signal
+        """Detect when current close is below cloud at chikou_offset ago."""
+        hist_cloud_bottom = df['cloud_bottom'].shift(parameters.chikou_offset)
+        signal = (df['close'] < hist_cloud_bottom) & mask
+        return signal.astype(bool)
 
     def check_strategy_signals(self,
                                df: pd.DataFrame,
@@ -347,6 +333,34 @@ class UnifiedIchimokuAnalyzer:
 
         return active_signals
 
+    def check_position_signals(self,
+                               df: pd.DataFrame,
+                               rules: 'StrategyRules') -> Dict[str, Any]:
+        """Evaluate long/short entry/exit signals on the latest closed bar."""
+        if len(df) == 0:
+            return {"long_entry": False, "short_entry": False, "long_exit": False, "short_exit": False, "timestamp": None}
+
+        # Use latest completed bar
+        latest_idx = -2 if len(df) > 1 else -1
+        latest = df.iloc[latest_idx]
+
+        def _eval(conds: List[SignalType], logic: str) -> bool:
+            if not conds:
+                return False
+            values = []
+            for c in conds:
+                col = self.signal_mapping.get(c)
+                values.append(bool(latest.get(col, False)))
+            return all(values) if logic.upper() == "AND" else any(values)
+
+        return {
+            "long_entry": _eval(rules.long_entry, rules.long_entry_logic),
+            "short_entry": _eval(rules.short_entry, rules.short_entry_logic),
+            "long_exit": _eval(rules.long_exit, rules.long_exit_logic),
+            "short_exit": _eval(rules.short_exit, rules.short_exit_logic),
+            "timestamp": df.index[latest_idx]
+        }
+
     def generate_strategy_analysis(self,
                                    df: pd.DataFrame,
                                    parameters: IchimokuParameters,
@@ -415,7 +429,7 @@ class UnifiedIchimokuAnalyzer:
             "price_below_cloud": latest.get('price_below_cloud', False),
             "tenkan_above_kijun": latest.get('tenkan_above_kijun', False),
             "tenkan_below_kijun": latest.get('tenkan_below_kijun', False),
-            "span_a_above_span_b": latest.get('SpanAaboveSpanB', False)
+            "span_a_above_span_b": latest.get('span_a_above_span_b', latest.get('SpanAaboveSpanB', False))
         }
 
     def _has_ichimoku_columns(self, df: pd.DataFrame) -> bool:
@@ -430,10 +444,10 @@ class IchimokuStrategyConfig:
 
     @staticmethod
     def create_parameters(tenkan_period: int = 9,
-                          kijun_period: int = 26,
-                          senkou_b_period: int = 52,
-                          chikou_offset: int = 26,
-                          senkou_offset: int = 26) -> IchimokuParameters:
+                         kijun_period: int = 26,
+                         senkou_b_period: int = 52,
+                         chikou_offset: int = 26,
+                         senkou_offset: int = 26) -> IchimokuParameters:
         """Create Ichimoku parameters object."""
         return IchimokuParameters(
             tenkan_period=tenkan_period,
@@ -448,13 +462,64 @@ class IchimokuStrategyConfig:
                                  sell_conditions: List[SignalType],
                                  buy_logic: str = "AND",
                                  sell_logic: str = "AND") -> SignalConditions:
-        """Create signal conditions object."""
+        """Create signal conditions object (legacy buy/sell)."""
         return SignalConditions(
             buy_conditions=buy_conditions,
             sell_conditions=sell_conditions,
             buy_logic=buy_logic,
             sell_logic=sell_logic
         )
+
+    @staticmethod
+    def create_strategy_rules(long_entry: List[SignalType],
+                              short_entry: List[SignalType],
+                              long_exit: List[SignalType],
+                              short_exit: List[SignalType],
+                              long_entry_logic: str = "AND",
+                              short_entry_logic: str = "AND",
+                              long_exit_logic: str = "AND",
+                              short_exit_logic: str = "AND") -> StrategyRules:
+        """Create StrategyRules for explicit long/short entries and exits."""
+        return StrategyRules(
+            long_entry=long_entry,
+            short_entry=short_entry,
+            long_exit=long_exit,
+            short_exit=short_exit,
+            long_entry_logic=long_entry_logic,
+            short_entry_logic=short_entry_logic,
+            long_exit_logic=long_exit_logic,
+            short_exit_logic=short_exit_logic,
+        )
+
+    @staticmethod
+    def parse_signal_list(signal_names: List[str]) -> List[SignalType]:
+        """Parse a list of signal names (case- and style-insensitive) into SignalType enums."""
+        name_map = {
+            "priceabovecloud": SignalType.PRICE_ABOVE_CLOUD,
+            "price_below_cloud": SignalType.PRICE_BELOW_CLOUD,
+            "pricebelowcloud": SignalType.PRICE_BELOW_CLOUD,
+            "tenkanabovekijun": SignalType.TENKAN_ABOVE_KIJUN,
+            "tenkan_below_kijun": SignalType.TENKAN_BELOW_KIJUN,
+            "tenkanbelowkijun": SignalType.TENKAN_BELOW_KIJUN,
+            "spanaabovespanb": SignalType.SPAN_A_ABOVE_SPAN_B,
+            "span_a_above_span_b": SignalType.SPAN_A_ABOVE_SPAN_B,
+            "spanabelowspanb": SignalType.SPAN_A_BELOW_SPAN_B,
+            "span_a_below_span_b": SignalType.SPAN_A_BELOW_SPAN_B,
+            "chikouaboveprice": SignalType.CHIKOU_ABOVE_PRICE,
+            "chikou_above_price": SignalType.CHIKOU_ABOVE_PRICE,
+            "chikoubelowprice": SignalType.CHIKOU_BELOW_PRICE,
+            "chikou_below_price": SignalType.CHIKOU_BELOW_PRICE,
+            "chikouabovecloud": SignalType.CHIKOU_ABOVE_CLOUD,
+            "chikou_above_cloud": SignalType.CHIKOU_ABOVE_CLOUD,
+            "chikoubelowcloud": SignalType.CHIKOU_BELOW_CLOUD,
+            "chikou_below_cloud": SignalType.CHIKOU_BELOW_CLOUD,
+        }
+        parsed: List[SignalType] = []
+        for n in signal_names:
+            key = n.replace(" ", "").replace("-", "_").replace("__", "_").lower().replace("_", "")
+            if key in name_map:
+                parsed.append(name_map[key])
+        return parsed
 
 
 # Example usage with strategy configurations
